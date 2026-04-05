@@ -1,0 +1,132 @@
+'use client';
+
+import React, { useState } from 'react';
+import { useSession, signOut } from 'next-auth/react';
+import { Download, Moon, Sun, LogOut, User, Key, Eye, EyeOff } from 'lucide-react';
+import { useToast } from './Toast';
+import { useTheme } from './ThemeProvider';
+
+export const Settings = () => {
+  const { data: session } = useSession();
+  const { toast } = useToast();
+  const { isDark, toggleTheme } = useTheme();
+  const [groqKey, setGroqKey] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    return localStorage.getItem('groq_api_key') || '';
+  });
+  const [showKey, setShowKey] = useState(false);
+
+  const handleSaveKey = () => {
+    if (groqKey.trim()) localStorage.setItem('groq_api_key', groqKey.trim());
+    else localStorage.removeItem('groq_api_key');
+    toast('API key saved', 'success');
+  };
+
+  const handleExport = async (type: 'csv' | 'debts' | 'investments' | 'all') => {
+    const filenames: Record<string, string> = { csv: 'transactions.csv', debts: 'debts.csv', investments: 'investments.csv', all: 'all-finance-data.csv' };
+    try {
+      const res = await fetch(`/api/export/${type}`);
+      if (!res.ok) throw new Error('Export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filenames[type];
+      a.click();
+      URL.revokeObjectURL(url);
+      toast('Exported successfully', 'success');
+    } catch {
+      toast('Export failed', 'error');
+    }
+  };
+
+  const inputCls = "flex-1 bg-black/[0.04] dark:bg-white/[0.06] rounded-xl px-4 py-2.5 text-[13px] font-medium font-mono focus:outline-none focus:ring-2 focus:ring-black/15 dark:focus:ring-white/15 placeholder:text-black/25 dark:placeholder:text-white/25";
+
+  return (
+    <div className="px-5 pt-12 pb-4 space-y-5">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
+        <p className="text-[12px] font-medium text-black/40 dark:text-white/40 mt-0.5">Preferences and data</p>
+      </div>
+
+      {/* AI Provider */}
+      <section>
+        <h3 className="text-[10px] font-bold text-black/35 dark:text-white/35 uppercase tracking-widest mb-2.5 ml-1">AI Provider</h3>
+        <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] shadow-sm p-4 space-y-4">
+          <p className="text-[13px] font-semibold">Groq</p>
+          <p className="text-[11px] text-black/40 dark:text-white/40">Free key: console.groq.com — Llama 3.3 + Whisper</p>
+          <div className="flex items-center gap-2">
+            <Key size={14} className="text-black/30 dark:text-white/30 shrink-0" />
+            <input type={showKey ? 'text' : 'password'} value={groqKey} onChange={e => setGroqKey(e.target.value)}
+              placeholder="Groq API key" className={inputCls} />
+            <button onClick={() => setShowKey(!showKey)} className="p-2 text-black/30 dark:text-white/30">{showKey ? <EyeOff size={15} /> : <Eye size={15} />}</button>
+          </div>
+          <button onClick={handleSaveKey} className="w-full bg-black dark:bg-white text-white dark:text-black py-2.5 rounded-xl text-[13px] font-semibold">Save Key</button>
+        </div>
+      </section>
+
+      {/* Account */}
+      <section>
+        <h3 className="text-[10px] font-bold text-black/35 dark:text-white/35 uppercase tracking-widest mb-2.5 ml-1">Account</h3>
+        <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] shadow-sm overflow-hidden">
+          <div className="p-4 space-y-3">
+            <div className="flex items-center gap-3">
+              {session?.user?.image ? (
+                <img src={session.user.image} alt="" className="w-10 h-10 rounded-full" />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-black/[0.04] dark:bg-white/[0.06] flex items-center justify-center">
+                  <User size={18} className="text-black/40 dark:text-white/40" />
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-[14px] truncate">{session?.user?.name || 'User'}</p>
+                <p className="text-[11px] text-black/40 dark:text-white/40 truncate">{session?.user?.email}</p>
+              </div>
+              <div className="w-2.5 h-2.5 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
+            </div>
+            <button
+              onClick={() => signOut({ callbackUrl: '/login' })}
+              className="w-full py-3 bg-black/[0.04] dark:bg-white/[0.06] rounded-xl text-[13px] font-semibold flex justify-center items-center gap-2 text-red-500"
+            >
+              <LogOut size={15} />Sign Out
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Preferences */}
+      <section>
+        <h3 className="text-[10px] font-bold text-black/35 dark:text-white/35 uppercase tracking-widest mb-2.5 ml-1">Preferences</h3>
+        <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] shadow-sm overflow-hidden">
+          <button onClick={toggleTheme} className="w-full px-4 py-3.5 flex items-center justify-between font-medium text-[14px]">
+            <span className="flex items-center gap-3">{isDark ? <Sun size={17} /> : <Moon size={17} />}Appearance</span>
+            <span className="text-[12px] text-black/35 dark:text-white/35">{isDark ? 'Dark' : 'Light'}</span>
+          </button>
+        </div>
+      </section>
+
+      {/* Data */}
+      <section>
+        <h3 className="text-[10px] font-bold text-black/35 dark:text-white/35 uppercase tracking-widest mb-2.5 ml-1">Export Data</h3>
+        <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] shadow-sm overflow-hidden divide-y divide-black/[0.04] dark:divide-white/[0.06]">
+          <button onClick={() => handleExport('csv')} className="w-full px-4 py-3.5 flex items-center justify-between font-medium text-[14px]">
+            <span className="flex items-center gap-3"><Download size={17} />Transactions</span>
+            <span className="text-[11px] text-black/35 dark:text-white/35">CSV</span>
+          </button>
+          <button onClick={() => handleExport('debts')} className="w-full px-4 py-3.5 flex items-center justify-between font-medium text-[14px]">
+            <span className="flex items-center gap-3"><Download size={17} />Debts</span>
+            <span className="text-[11px] text-black/35 dark:text-white/35">CSV</span>
+          </button>
+          <button onClick={() => handleExport('investments')} className="w-full px-4 py-3.5 flex items-center justify-between font-medium text-[14px]">
+            <span className="flex items-center gap-3"><Download size={17} />Investments</span>
+            <span className="text-[11px] text-black/35 dark:text-white/35">CSV</span>
+          </button>
+          <button onClick={() => handleExport('all')} className="w-full px-4 py-3.5 flex items-center justify-between font-semibold text-[14px]">
+            <span className="flex items-center gap-3"><Download size={17} />All Data</span>
+            <span className="text-[11px] text-black/35 dark:text-white/35">CSV</span>
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+};
