@@ -21,11 +21,19 @@ export const Dashboard = () => {
   const [filterCategory, setFilterCategory] = useState<string | null>(null);
   const [txPage, setTxPage] = useState(1);
   const TX_PER_PAGE = 15;
-  const [insights, setInsights] = useState<{ emoji: string; title: string; body: string }[]>(() => {
-    if (typeof window === 'undefined') return [];
-    try { return JSON.parse(localStorage.getItem('finance_ai_insights') || '[]'); } catch { return []; }
-  });
+  const [insights, setInsights] = useState<{ emoji: string; title: string; body: string }[]>([]);
   const [insightsLoading, setInsightsLoading] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('finance_ai_insights');
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) setInsights(parsed);
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   const currentMonthTxs = useMemo(() => {
     const now = new Date();
@@ -51,7 +59,7 @@ export const Dashboard = () => {
     const days = Array.from({ length: 7 }).map((_, i) => format(subDays(new Date(), 6 - i), 'yyyy-MM-dd'));
     return days.map(d => ({
       name: format(parseISO(d), 'EEE'),
-      amount: transactions.filter(t => t.date.startsWith(d) && t.type === 'Expense').reduce((s, t) => s + t.amount, 0),
+      amount: transactions.filter(t => typeof t.date === 'string' && t.date.startsWith(d) && t.type === 'Expense').reduce((s, t) => s + Number(t.amount) || 0, 0),
     }));
   }, [transactions]);
 
@@ -71,7 +79,13 @@ export const Dashboard = () => {
 
   const recentTxs = useMemo(() => {
     let f = [...currentMonthTxs];
-    if (searchQuery.trim()) { const q = searchQuery.toLowerCase(); f = f.filter(t => t.description.toLowerCase().includes(q) || t.category.toLowerCase().includes(q) || String(t.amount).includes(q)); }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      f = f.filter(t =>
+        (t.description ?? '').toLowerCase().includes(q) ||
+        (t.category ?? '').toLowerCase().includes(q) ||
+        String(t.amount ?? '').includes(q));
+    }
     if (filterCategory) f = f.filter(t => t.category === filterCategory);
     return f.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [currentMonthTxs, searchQuery, filterCategory]);
@@ -105,7 +119,11 @@ export const Dashboard = () => {
 
   useEffect(() => { if (insights.length === 0 && transactions.length > 0 && typeof window !== 'undefined' && localStorage.getItem('groq_api_key')) refreshInsights(); }, [transactions.length]);
 
-  const startEdit = (t: Transaction) => { setEditingId(t._id); setEditForm({ amount: t.amount, type: t.type, category: t.category, description: t.description, date: t.date.split('T')[0] }); };
+  const startEdit = (t: Transaction) => {
+    const dateStr = typeof t.date === 'string' ? t.date.split('T')[0] : '';
+    setEditingId(t._id);
+    setEditForm({ amount: t.amount, type: t.type, category: t.category, description: t.description, date: dateStr });
+  };
   const saveEdit = async () => { if (!editingId) return; await editTransaction(editingId, { amount: Number(editForm.amount), type: editForm.type, category: editForm.category, description: editForm.description, date: editForm.date ? new Date(editForm.date).toISOString() : undefined }); setEditingId(null); toast('Updated'); };
   const handleDelete = (id: string) => { confirm('Delete this transaction?', async () => { await deleteTransaction(id); toast('Deleted'); }); };
 
@@ -290,7 +308,7 @@ export const Dashboard = () => {
                       </div>
                     </div>
                     <span className={`text-[15px] font-bold tabular-nums shrink-0 ${t.type === 'Income' ? 'text-green-600 dark:text-green-400' : t.type === 'Expense' ? 'text-red-500 dark:text-red-400' : ''}`}>
-                      {t.type === 'Income' ? '+' : t.type === 'Expense' ? '-' : ''}₹{t.amount.toLocaleString()}
+                      {t.type === 'Income' ? '+' : t.type === 'Expense' ? '-' : ''}₹{(Number(t.amount) || 0).toLocaleString()}
                     </span>
                     <div className="flex shrink-0 -mr-1">
                       <button onClick={() => startEdit(t)} className="p-2 text-black/20 dark:text-white/20 hover:text-black dark:hover:text-white"><Pencil size={14} /></button>

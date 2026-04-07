@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useFinance } from '@/hooks/useFinance';
 import { Plus, X, Trash2, Wallet } from 'lucide-react';
 import { useToast } from './Toast';
@@ -14,12 +14,13 @@ export const Budgets = () => {
   const [showAdd, setShowAdd] = useState(false);
   const [category, setCategory] = useState('Food');
   const [amount, setAmount] = useState('');
-  const [monthlyLimit, setMonthlyLimit] = useState(() => {
-    if (typeof window === 'undefined') return '';
-    return localStorage.getItem('monthly_budget') || '';
-  });
+  const [monthlyLimit, setMonthlyLimit] = useState('');
   const [editingMonthly, setEditingMonthly] = useState(false);
   const currentMonth = format(new Date(), 'yyyy-MM');
+
+  useEffect(() => {
+    setMonthlyLimit(localStorage.getItem('monthly_budget') || '');
+  }, []);
 
   const currentBudgets = useMemo(() => budgets.filter(b => b.month === currentMonth), [budgets, currentMonth]);
 
@@ -51,7 +52,7 @@ export const Budgets = () => {
 
   const totalBudget = currentBudgets.reduce((s, b) => s + b.amount, 0);
   const totalSpent = currentBudgets.reduce((s, b) => s + (spentByCategory[b.category] || 0), 0);
-  const savedMonthly = typeof window !== 'undefined' ? Number(localStorage.getItem('monthly_budget') || '0') : 0;
+  const savedMonthly = Number(monthlyLimit.trim() || '0');
 
   return (
     <div className="px-5 pt-12 pb-4 space-y-5">
@@ -73,7 +74,15 @@ export const Budgets = () => {
             <input type="number" value={monthlyLimit} onChange={e => setMonthlyLimit(e.target.value)} placeholder="Total limit (₹)" autoFocus
               className="flex-1 bg-black/[0.04] dark:bg-white/[0.06] rounded-xl px-4 py-2.5 text-[14px] font-medium focus:outline-none placeholder:text-black/25 dark:placeholder:text-white/25" />
             <button onClick={handleSaveMonthly} className="px-4 py-2.5 bg-black dark:bg-white text-white dark:text-black rounded-xl text-[13px] font-semibold">Save</button>
-            <button onClick={() => setEditingMonthly(false)} className="px-3 py-2.5 text-[13px] font-semibold text-black/40 dark:text-white/40">Cancel</button>
+            <button
+              onClick={() => {
+                setMonthlyLimit(localStorage.getItem('monthly_budget') || '');
+                setEditingMonthly(false);
+              }}
+              className="px-3 py-2.5 text-[13px] font-semibold text-black/40 dark:text-white/40"
+            >
+              Cancel
+            </button>
           </div>
         ) : savedMonthly > 0 ? (
           <div>

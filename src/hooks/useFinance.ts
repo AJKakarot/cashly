@@ -53,6 +53,59 @@ async function api<T>(url: string, options?: RequestInit): Promise<T> {
   return res.json();
 }
 
+function normalizeTransaction(raw: Record<string, unknown>): Transaction {
+  const d = raw.date;
+  const date =
+    typeof d === 'string' ? d : d instanceof Date ? d.toISOString() : '';
+  return {
+    _id: String(raw._id ?? ''),
+    date,
+    amount: Number(raw.amount) || 0,
+    currency: String(raw.currency ?? 'INR'),
+    type: String(raw.type ?? 'Expense'),
+    category: String(raw.category ?? 'Other'),
+    description: String(raw.description ?? ''),
+    notes: String(raw.notes ?? ''),
+    tags: String(raw.tags ?? ''),
+    receiptUrl: String(raw.receiptUrl ?? ''),
+  };
+}
+
+function normalizeDebt(raw: Record<string, unknown>): Debt {
+  return {
+    _id: String(raw._id ?? ''),
+    person: String(raw.person ?? ''),
+    amount: Number(raw.amount) || 0,
+    type: raw.type === 'Borrowed' ? 'Borrowed' : 'Lent',
+    dueDate: typeof raw.dueDate === 'string' ? raw.dueDate : '',
+    status: raw.status === 'Settled' ? 'Settled' : 'Pending',
+    notes: String(raw.notes ?? ''),
+  };
+}
+
+function normalizeBudget(raw: Record<string, unknown>): Budget {
+  return {
+    _id: String(raw._id ?? ''),
+    category: String(raw.category ?? 'Other'),
+    amount: Number(raw.amount) || 0,
+    month: String(raw.month ?? ''),
+  };
+}
+
+function normalizeInvestment(raw: Record<string, unknown>): Investment {
+  const d = raw.dateAdded;
+  const dateAdded =
+    typeof d === 'string' ? d : d instanceof Date ? d.toISOString() : '';
+  return {
+    _id: String(raw._id ?? ''),
+    name: String(raw.name ?? ''),
+    type: String(raw.type ?? ''),
+    investedAmount: Number(raw.investedAmount) || 0,
+    currentValue: Number(raw.currentValue) || 0,
+    dateAdded,
+  };
+}
+
 export function useFinance() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [debts, setDebts] = useState<Debt[]>([]);
@@ -70,15 +123,15 @@ export function useFinance() {
     setLoading(true);
     try {
       const [txs, ds, bs, invs] = await Promise.all([
-        api<Transaction[]>('/api/transactions'),
-        api<Debt[]>('/api/debts'),
-        api<Budget[]>('/api/budgets'),
-        api<Investment[]>('/api/investments'),
+        api<Record<string, unknown>[]>('/api/transactions'),
+        api<Record<string, unknown>[]>('/api/debts'),
+        api<Record<string, unknown>[]>('/api/budgets'),
+        api<Record<string, unknown>[]>('/api/investments'),
       ]);
-      setTransactions(txs);
-      setDebts(ds);
-      setBudgets(bs);
-      setInvestments(invs);
+      setTransactions(txs.map(normalizeTransaction));
+      setDebts(ds.map(normalizeDebt));
+      setBudgets(bs.map(normalizeBudget));
+      setInvestments(invs.map(normalizeInvestment));
       notifyToneRefresh();
     } catch (err) {
       console.error('Failed to fetch data:', err);
@@ -91,21 +144,23 @@ export function useFinance() {
 
   // --- Transactions ---
   const addTransaction = async (data: Omit<Transaction, '_id'>) => {
-    const created = await api<Transaction>('/api/transactions', {
+    const created = await api<Record<string, unknown>>('/api/transactions', {
       method: 'POST',
       body: JSON.stringify(data),
     });
-    setTransactions(prev => [created, ...prev]);
+    const t = normalizeTransaction(created);
+    setTransactions(prev => [t, ...prev]);
     notifyToneRefresh();
-    return created;
+    return t;
   };
 
   const editTransaction = async (id: string, updates: Partial<Omit<Transaction, '_id'>>) => {
-    const updated = await api<Transaction>(`/api/transactions/${id}`, {
+    const updated = await api<Record<string, unknown>>(`/api/transactions/${id}`, {
       method: 'PUT',
       body: JSON.stringify(updates),
     });
-    setTransactions(prev => prev.map(t => t._id === id ? updated : t));
+    const t = normalizeTransaction(updated);
+    setTransactions(prev => prev.map(x => x._id === id ? t : x));
     notifyToneRefresh();
   };
 
@@ -117,19 +172,20 @@ export function useFinance() {
 
   // --- Debts ---
   const addDebt = async (data: Omit<Debt, '_id'>) => {
-    const created = await api<Debt>('/api/debts', {
+    const created = await api<Record<string, unknown>>('/api/debts', {
       method: 'POST',
       body: JSON.stringify(data),
     });
-    setDebts(prev => [created, ...prev]);
+    setDebts(prev => [normalizeDebt(created), ...prev]);
   };
 
   const editDebt = async (id: string, updates: Partial<Omit<Debt, '_id'>>) => {
-    const updated = await api<Debt>(`/api/debts/${id}`, {
+    const updated = await api<Record<string, unknown>>(`/api/debts/${id}`, {
       method: 'PUT',
       body: JSON.stringify(updates),
     });
-    setDebts(prev => prev.map(d => d._id === id ? updated : d));
+    const d = normalizeDebt(updated);
+    setDebts(prev => prev.map(x => x._id === id ? d : x));
   };
 
   const deleteDebt = async (id: string) => {
@@ -143,19 +199,19 @@ export function useFinance() {
 
   // --- Budgets ---
   const addBudget = async (data: Omit<Budget, '_id'>) => {
-    const created = await api<Budget>('/api/budgets', {
+    const created = await api<Record<string, unknown>>('/api/budgets', {
       method: 'POST',
       body: JSON.stringify(data),
     });
-    // Replace existing budget for same category+month or add new
+    const b = normalizeBudget(created);
     setBudgets(prev => {
-      const idx = prev.findIndex(b => b.category === data.category && b.month === data.month);
+      const idx = prev.findIndex(x => x.category === data.category && x.month === data.month);
       if (idx !== -1) {
-        const updated = [...prev];
-        updated[idx] = created;
-        return updated;
+        const next = [...prev];
+        next[idx] = b;
+        return next;
       }
-      return [...prev, created];
+      return [...prev, b];
     });
   };
 
@@ -166,11 +222,11 @@ export function useFinance() {
 
   // --- Investments ---
   const addInvestment = async (data: Omit<Investment, '_id'>) => {
-    const created = await api<Investment>('/api/investments', {
+    const created = await api<Record<string, unknown>>('/api/investments', {
       method: 'POST',
       body: JSON.stringify(data),
     });
-    setInvestments(prev => [created, ...prev]);
+    setInvestments(prev => [normalizeInvestment(created), ...prev]);
   };
 
   const deleteInvestment = async (id: string) => {
@@ -179,11 +235,12 @@ export function useFinance() {
   };
 
   const updateInvestmentValue = async (id: string, newValue: number) => {
-    const updated = await api<Investment>(`/api/investments/${id}`, {
+    const updated = await api<Record<string, unknown>>(`/api/investments/${id}`, {
       method: 'PUT',
       body: JSON.stringify({ currentValue: newValue }),
     });
-    setInvestments(prev => prev.map(i => i._id === id ? updated : i));
+    const inv = normalizeInvestment(updated);
+    setInvestments(prev => prev.map(i => i._id === id ? inv : i));
   };
 
   return {

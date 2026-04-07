@@ -21,10 +21,11 @@ export const ToneProvider = ({ children }: { children: React.ReactNode }) => {
           if (!cancelled) setTone('positive');
           return;
         }
-        const txs: Array<{ amount: number; type: string }> = await res.json();
+        const txs: Array<{ amount?: unknown; type?: string }> = await res.json();
         const net = txs.reduce((acc, t) => {
-          if (t.type === 'Income') return acc + t.amount;
-          if (t.type === 'Expense') return acc - t.amount;
+          const amt = Number(t.amount) || 0;
+          if (t.type === 'Income') return acc + amt;
+          if (t.type === 'Expense') return acc - amt;
           return acc;
         }, 0);
         if (!cancelled) setTone(net < 0 ? 'negative' : 'positive');

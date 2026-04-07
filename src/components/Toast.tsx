@@ -15,7 +15,10 @@ export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
   const [confirmState, setConfirmState] = useState<{ message: string; onConfirm: () => void } | null>(null);
 
   const toast = useCallback((message: string, type: ToastType = 'success') => {
-    const id = crypto.randomUUID();
+    const id =
+      typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
     setToasts(prev => [...prev, { id, message, type }]);
   }, []);
 

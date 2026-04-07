@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { Download, Moon, LogOut, User, Key, Eye, EyeOff } from 'lucide-react';
 import { useToast } from './Toast';
@@ -14,11 +14,12 @@ export const Settings = () => {
   const { tone } = useTone();
   const negative = tone === 'negative';
   const [avatarError, setAvatarError] = useState(false);
-  const [groqKey, setGroqKey] = useState(() => {
-    if (typeof window === 'undefined') return '';
-    return localStorage.getItem('groq_api_key') || '';
-  });
+  const [groqKey, setGroqKey] = useState('');
   const [showKey, setShowKey] = useState(false);
+
+  useEffect(() => {
+    setGroqKey(localStorage.getItem('groq_api_key') || '');
+  }, []);
 
   const handleSaveKey = () => {
     if (groqKey.trim()) localStorage.setItem('groq_api_key', groqKey.trim());
