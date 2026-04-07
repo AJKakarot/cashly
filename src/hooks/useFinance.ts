@@ -60,6 +60,12 @@ export function useFinance() {
   const [investments, setInvestments] = useState<Investment[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const notifyToneRefresh = () => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('cashly:transactions-changed'));
+    }
+  };
+
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
@@ -73,6 +79,7 @@ export function useFinance() {
       setDebts(ds);
       setBudgets(bs);
       setInvestments(invs);
+      notifyToneRefresh();
     } catch (err) {
       console.error('Failed to fetch data:', err);
     } finally {
@@ -89,6 +96,7 @@ export function useFinance() {
       body: JSON.stringify(data),
     });
     setTransactions(prev => [created, ...prev]);
+    notifyToneRefresh();
     return created;
   };
 
@@ -98,11 +106,13 @@ export function useFinance() {
       body: JSON.stringify(updates),
     });
     setTransactions(prev => prev.map(t => t._id === id ? updated : t));
+    notifyToneRefresh();
   };
 
   const deleteTransaction = async (id: string) => {
     await api(`/api/transactions/${id}`, { method: 'DELETE' });
     setTransactions(prev => prev.filter(t => t._id !== id));
+    notifyToneRefresh();
   };
 
   // --- Debts ---

@@ -17,7 +17,10 @@ export const ToneProvider = ({ children }: { children: React.ReactNode }) => {
     const fetchTone = async () => {
       try {
         const res = await fetch('/api/transactions');
-        if (!res.ok) return;
+        if (!res.ok) {
+          if (!cancelled) setTone('positive');
+          return;
+        }
         const txs: Array<{ amount: number; type: string }> = await res.json();
         const net = txs.reduce((acc, t) => {
           if (t.type === 'Income') return acc + t.amount;
@@ -26,15 +29,18 @@ export const ToneProvider = ({ children }: { children: React.ReactNode }) => {
         }, 0);
         if (!cancelled) setTone(net < 0 ? 'negative' : 'positive');
       } catch {
-        // Keep default tone when unauthenticated/offline.
+        if (!cancelled) setTone('positive');
       }
     };
 
     fetchTone();
-    const id = window.setInterval(fetchTone, 15000);
+    const id = window.setInterval(fetchTone, 6000);
+    const onChange = () => { fetchTone(); };
+    window.addEventListener('cashly:transactions-changed', onChange);
     return () => {
       cancelled = true;
       window.clearInterval(id);
+      window.removeEventListener('cashly:transactions-changed', onChange);
     };
   }, []);
 
