@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useEffect } from 'react';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 import { Key, Eye, EyeOff } from 'lucide-react';
@@ -8,10 +9,11 @@ import { Key, Eye, EyeOff } from 'lucide-react';
 export default function LoginPage() {
   const [apiKey, setApiKey] = useState('');
   const [showKey, setShowKey] = useState(false);
-  const [keySaved, setKeySaved] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return !!localStorage.getItem('groq_api_key');
-  });
+  const [keySaved, setKeySaved] = useState(false);
+
+  useEffect(() => {
+    setKeySaved(!!localStorage.getItem('groq_api_key'));
+  }, []);
 
   const handleSaveKey = () => {
     if (!apiKey.trim()) return;
@@ -30,7 +32,7 @@ export default function LoginPage() {
         <h2 className="text-xl font-bold tracking-tight mb-2">Sign In</h2>
         <p className="text-[13px] text-white/60 mb-8 max-w-[280px] leading-relaxed">Sign in to sync securely across devices.</p>
         <button
-          onClick={() => signIn('google', { callbackUrl: '/' })}
+          onClick={() => signIn('google', { callbackUrl: '/', prompt: 'select_account' })}
           className="w-full max-w-sm bg-gradient-to-r from-lime-400 to-lime-300 text-black py-3.5 rounded-xl font-semibold text-[15px]"
         >
           Sign in with Google
