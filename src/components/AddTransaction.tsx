@@ -6,11 +6,14 @@ import { useFinance } from '@/hooks/useFinance';
 import { Mic, Send, Loader2, ChevronDown, ChevronUp, Camera, X, Users, Plus, Trash2 } from 'lucide-react';
 import { useToast } from './Toast';
 import { format } from 'date-fns';
+import { useTone } from './ToneProvider';
 
 export const AddTransaction = () => {
   const router = useRouter();
   const { addTransaction, addDebt } = useFinance();
   const { toast } = useToast();
+  const { tone } = useTone();
+  const negative = tone === 'negative';
   const [text, setText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -160,7 +163,7 @@ export const AddTransaction = () => {
     }
   };
 
-  const inputCls = "w-full bg-black/[0.04] dark:bg-white/[0.06] rounded-xl px-4 py-3 text-[14px] font-medium focus:outline-none focus:ring-2 focus:ring-black/15 dark:focus:ring-white/15 placeholder:text-black/25 dark:placeholder:text-white/25";
+  const inputCls = `w-full bg-black/[0.04] dark:bg-white/[0.06] rounded-xl px-4 py-3 text-[14px] font-medium focus:outline-none focus:ring-2 ${negative ? 'focus:ring-red-500/35' : 'focus:ring-lime-300/30'} placeholder:text-black/25 dark:placeholder:text-white/25`;
 
   return (
     <div className="px-5 pt-12 pb-4 h-full flex flex-col overflow-y-auto">
@@ -171,7 +174,7 @@ export const AddTransaction = () => {
         <div className="relative w-28 h-28 flex items-center justify-center">
           {isRecording && <div className="absolute inset-0 bg-red-500/20 rounded-full animate-ping" />}
           <button onClick={toggleRecording} disabled={isProcessing}
-            className={`relative z-10 w-20 h-20 rounded-full flex items-center justify-center shadow-lg transition-all duration-200 ${isRecording ? 'bg-red-500 text-white scale-105' : 'bg-black dark:bg-white text-white dark:text-black active:scale-90'} ${isProcessing ? 'opacity-40' : ''}`}>
+            className={`relative z-10 w-20 h-20 rounded-full flex items-center justify-center shadow-lg transition-all duration-200 ${isRecording ? 'bg-red-500 text-white scale-105' : (negative ? 'bg-gradient-to-br from-red-500 to-red-400 text-white active:scale-90' : 'bg-gradient-to-br from-lime-400 to-lime-300 text-black active:scale-90')} ${isProcessing ? 'opacity-40' : ''}`}>
             {isProcessing ? <Loader2 className="animate-spin" size={28} /> : isRecording ? <div className="w-6 h-6 bg-white rounded-sm" /> : <Mic size={28} strokeWidth={1.5} />}
           </button>
         </div>
@@ -185,8 +188,8 @@ export const AddTransaction = () => {
           {/* Text input */}
           <form onSubmit={handleTextSubmit} className="relative">
             <input type="text" value={text} onChange={e => setText(e.target.value)} placeholder="Type natural language..." disabled={isProcessing || isRecording}
-              className="w-full bg-black/[0.04] dark:bg-white/[0.06] rounded-2xl py-3.5 pl-4 pr-12 text-[14px] font-medium focus:outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/10 disabled:opacity-40 placeholder:text-black/30 dark:placeholder:text-white/30" />
-            <button type="submit" disabled={!text.trim() || isProcessing} className="absolute right-2 top-2 bottom-2 bg-black dark:bg-white text-white dark:text-black px-3 rounded-xl disabled:opacity-20 transition-opacity"><Send size={16} /></button>
+              className={`w-full bg-black/[0.04] dark:bg-white/[0.06] rounded-2xl py-3.5 pl-4 pr-12 text-[14px] font-medium focus:outline-none focus:ring-2 ${negative ? 'focus:ring-red-500/35' : 'focus:ring-lime-300/30'} disabled:opacity-40 placeholder:text-black/30 dark:placeholder:text-white/30`} />
+            <button type="submit" disabled={!text.trim() || isProcessing} className={`absolute right-2 top-2 bottom-2 bg-gradient-to-r ${negative ? 'from-red-500 to-red-400 text-white' : 'from-lime-400 to-lime-300 text-black'} px-3 rounded-xl disabled:opacity-20 transition-opacity`}><Send size={16} /></button>
           </form>
 
           {/* Manual toggle */}
@@ -198,7 +201,7 @@ export const AddTransaction = () => {
             <form onSubmit={handleManualSubmit} className="bg-white dark:bg-neutral-900 p-5 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] shadow-sm space-y-4">
               <div className="flex gap-1 p-1 bg-black/[0.04] dark:bg-white/[0.06] rounded-xl">
                 {['Expense', 'Income', 'Transfer'].map(t => (
-                  <button key={t} type="button" onClick={() => setType(t)} className={`flex-1 py-2 rounded-lg text-[12px] font-semibold transition-all ${type === t ? 'bg-white dark:bg-neutral-800 shadow-sm text-black dark:text-white' : 'text-black/40 dark:text-white/40'}`}>{t}</button>
+                  <button key={t} type="button" onClick={() => setType(t)} className={`flex-1 py-2 rounded-lg text-[12px] font-semibold transition-all ${type === t ? (negative ? 'bg-red-500 text-white shadow-sm' : 'bg-lime-300 text-black shadow-sm') : 'text-black/40 dark:text-white/40'}`}>{t}</button>
                 ))}
               </div>
               <input type="number" placeholder="Amount (₹)" value={amount} onChange={e => setAmount(e.target.value)} className={inputCls} required />
@@ -232,8 +235,8 @@ export const AddTransaction = () => {
                   {showSplit && (
                     <div className="mt-3 space-y-3">
                       <div className="flex gap-1 p-1 bg-black/[0.04] dark:bg-white/[0.06] rounded-lg">
-                        <button type="button" onClick={() => setSplitMethod('equal')} className={`flex-1 py-1.5 rounded-md text-[11px] font-semibold ${splitMethod === 'equal' ? 'bg-white dark:bg-neutral-800 shadow-sm' : 'text-black/40 dark:text-white/40'}`}>Equal</button>
-                        <button type="button" onClick={() => setSplitMethod('custom')} className={`flex-1 py-1.5 rounded-md text-[11px] font-semibold ${splitMethod === 'custom' ? 'bg-white dark:bg-neutral-800 shadow-sm' : 'text-black/40 dark:text-white/40'}`}>Custom</button>
+                        <button type="button" onClick={() => setSplitMethod('equal')} className={`flex-1 py-1.5 rounded-md text-[11px] font-semibold ${splitMethod === 'equal' ? (negative ? 'bg-red-500 text-white shadow-sm' : 'bg-lime-300 text-black shadow-sm') : 'text-black/40 dark:text-white/40'}`}>Equal</button>
+                        <button type="button" onClick={() => setSplitMethod('custom')} className={`flex-1 py-1.5 rounded-md text-[11px] font-semibold ${splitMethod === 'custom' ? (negative ? 'bg-red-500 text-white shadow-sm' : 'bg-lime-300 text-black shadow-sm') : 'text-black/40 dark:text-white/40'}`}>Custom</button>
                       </div>
                       {splitPeople.map((p, i) => (
                         <div key={i} className="flex gap-2 items-center">
@@ -255,7 +258,7 @@ export const AddTransaction = () => {
                 </div>
               )}
 
-              <button type="submit" disabled={isProcessing || isUploading} className="w-full bg-black dark:bg-white text-white dark:text-black py-3.5 rounded-xl font-semibold text-[14px] disabled:opacity-30">
+              <button type="submit" disabled={isProcessing || isUploading} className={`w-full bg-gradient-to-r ${negative ? 'from-red-500 to-red-400 text-white' : 'from-lime-400 to-lime-300 text-black'} py-3.5 rounded-xl font-semibold text-[14px] disabled:opacity-30`}>
                 {isProcessing || isUploading ? 'Saving...' : showSplit && splitPeople.length > 0 ? `Split — ₹${getMyShare().toLocaleString()} your share` : 'Save'}
               </button>
             </form>

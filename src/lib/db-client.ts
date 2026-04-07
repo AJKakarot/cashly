@@ -1,21 +1,36 @@
 import { MongoClient } from 'mongodb';
 
-const uri = process.env.MONGODB_URI!;
 const options = {};
 
-let client: MongoClient;
-let clientPromise: Promise<MongoClient>;
-
-if (process.env.NODE_ENV === 'development') {
-  const g = global as any;
-  if (!g._mongoClientPromise) {
-    client = new MongoClient(uri, options);
-    g._mongoClientPromise = client.connect();
-  }
-  clientPromise = g._mongoClientPromise;
-} else {
-  client = new MongoClient(uri, options);
-  clientPromise = client.connect();
+declare global {
+  // eslint-disable-next-line no-var
+  var _mongoClientPromise: Promise<MongoClient> | undefined;
 }
 
-export default clientPromise;
+function createMongoClientPromise() {
+  const uri = process.env.MONGODB_URI;
+  if (!uri) {
+    throw new Error('MONGODB_URI is not set');
+  }
+
+  const client = new MongoClient(uri, options);
+  return client.connect();
+}
+
+/**
+ * Lazy singleton connection promise to avoid unhandled top-level connection
+ * rejections crashing the dev server before routes are invoked.
+ */
+export function getMongoClientPromise() {
+  if (process.env.NODE_ENV === 'development') {
+    if (!global._mongoClientPromise) {
+      global._mongoClientPromise = createMongoClientPromise().catch((err) => {
+        global._mongoClientPromise = undefined;
+        throw err;
+      });
+    }
+    return global._mongoClientPromise;
+  }
+
+  return createMongoClientPromise();
+}

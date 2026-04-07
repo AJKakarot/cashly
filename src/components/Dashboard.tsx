@@ -8,8 +8,8 @@ import { Pencil, Trash2, X, Search, TrendingUp, TrendingDown, Receipt, Sparkles,
 import { useToast } from './Toast';
 
 const CATEGORIES = ['Food', 'Travel', 'Entertainment', 'Bills', 'EMI', 'Shopping', 'Salary', 'Other'];
-const CHART_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F'];
-const CATEGORY_COLORS: Record<string, string> = Object.fromEntries(CATEGORIES.map((c, i) => [c, CHART_COLORS[i]]));
+const GREEN_CHART_COLORS = ['#bef264', '#a3e635', '#84cc16', '#65a30d', '#4d7c0f', '#3f6212', '#d9f99d', '#ecfccb'];
+const RED_CHART_COLORS = ['#fda4af', '#fb7185', '#f43f5e', '#e11d48', '#be123c', '#9f1239', '#fecdd3', '#ffe4e6'];
 const TT: React.CSSProperties = { borderRadius: '10px', border: 'none', boxShadow: '0 2px 12px rgba(0,0,0,0.12)', fontSize: '12px', fontWeight: 600, padding: '6px 10px' };
 
 export const Dashboard = () => {
@@ -61,6 +61,13 @@ export const Dashboard = () => {
   }, [transactions]);
 
   const expenseChange = lastMonthExpense > 0 ? ((expense - lastMonthExpense) / lastMonthExpense) * 100 : 0;
+  const netBalance = income - expense;
+  const isPositive = netBalance >= 0;
+  const chartColors = isPositive ? GREEN_CHART_COLORS : RED_CHART_COLORS;
+  const categoryColors: Record<string, string> = useMemo(
+    () => Object.fromEntries(CATEGORIES.map((c, i) => [c, chartColors[i]])),
+    [chartColors]
+  );
 
   const recentTxs = useMemo(() => {
     let f = [...currentMonthTxs];
@@ -113,34 +120,45 @@ export const Dashboard = () => {
   }
 
   return (
-    <div className="px-5 pt-12 pb-4 space-y-5">
+    <div className="px-5 pt-12 pb-4 space-y-5 text-white">
       {/* Header */}
       <div className="flex justify-between items-end">
         <div>
-          <p className="text-[11px] font-semibold text-black/40 dark:text-white/40 uppercase tracking-widest">{format(new Date(), 'MMMM yyyy')}</p>
-          <h1 className="text-2xl font-bold tracking-tight mt-0.5">Dashboard</h1>
+          <h1 className="text-2xl font-bold tracking-tight mt-0.5">Cashly</h1>
         </div>
       </div>
 
       {/* Balance Card */}
-      <div className="bg-white dark:bg-neutral-900 p-5 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] shadow-sm">
-        <p className="text-[11px] font-semibold text-black/40 dark:text-white/40 uppercase tracking-wider">Net Balance</p>
-        <p className="text-3xl font-bold tracking-tight mt-1">₹{(income - expense).toLocaleString()}</p>
-        <div className="grid grid-cols-2 gap-3 mt-5 pt-4 border-t border-black/[0.04] dark:border-white/[0.06]">
+      <div
+        className={`p-4 rounded-[28px] border ${
+          isPositive
+            ? 'bg-gradient-to-br from-lime-300 to-lime-400 border-lime-200/70 shadow-[0_12px_30px_rgba(132,204,22,0.28)]'
+            : 'bg-red-400 border-red-400 shadow-[0_12px_30px_rgba(239,68,68,0.28)]'
+        }`}
+      >
+        <div className={`rounded-3xl p-4 border ${isPositive ? 'bg-lime-200/70 border-lime-100/80' : 'bg-red-500 border-red-500'}`}>
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] font-semibold text-black/60 uppercase tracking-wider">Total Balance</p>
+          </div>
+          <p className="text-4xl font-extrabold tracking-tight mt-2 text-black">₹{netBalance.toLocaleString()}</p>
+
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 mt-4 px-1">
           <div>
-            <p className="text-[10px] font-semibold text-black/35 dark:text-white/35 uppercase tracking-wider">Income</p>
-            <p className="text-lg font-bold text-green-600 dark:text-green-400 mt-0.5">₹{income.toLocaleString()}</p>
+            <p className="text-[10px] font-semibold text-black/55 uppercase tracking-wider">Income</p>
+            <p className="text-lg font-bold text-emerald-900 mt-0.5">₹{income.toLocaleString()}</p>
           </div>
           <div>
-            <p className="text-[10px] font-semibold text-black/35 dark:text-white/35 uppercase tracking-wider">Expense</p>
-            <p className="text-lg font-bold text-red-500 dark:text-red-400 mt-0.5">₹{expense.toLocaleString()}</p>
+            <p className="text-[10px] font-semibold text-black/55 uppercase tracking-wider">Expense</p>
+            <p className="text-lg font-bold text-rose-800 mt-0.5">₹{expense.toLocaleString()}</p>
           </div>
         </div>
       </div>
 
       {/* Month-over-month */}
       {lastMonthExpense > 0 && (
-        <div className="flex items-center gap-3 bg-white dark:bg-neutral-900 p-4 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] shadow-sm">
+        <div className="flex items-center gap-3 glass-card p-4 rounded-2xl">
           <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${expenseChange <= 0 ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
             {expenseChange <= 0 ? <TrendingDown size={17} className="text-green-500" /> : <TrendingUp size={17} className="text-red-500" />}
           </div>
@@ -153,7 +171,7 @@ export const Dashboard = () => {
 
       {/* AI Insights */}
       {(insights.length > 0 || insightsLoading) && (
-        <div className="bg-white dark:bg-neutral-900 p-4 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] shadow-sm">
+        <div className="glass-card p-4 rounded-2xl">
           <div className="flex justify-between items-center mb-3">
             <div className="flex items-center gap-1.5">
               <Sparkles size={14} className="text-amber-500" />
@@ -178,19 +196,19 @@ export const Dashboard = () => {
 
       {/* Pie Chart */}
       {categoryData.length > 0 && (
-        <div className="bg-white dark:bg-neutral-900 p-5 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] shadow-sm">
+        <div className="glass-card p-5 rounded-2xl">
           <h3 className="text-[13px] font-bold tracking-tight mb-4">Expenses by Category</h3>
           <div className="h-44">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart><Pie data={categoryData} cx="50%" cy="50%" innerRadius={55} outerRadius={72} paddingAngle={3} dataKey="value" stroke="none">
-                {categoryData.map(e => <Cell key={e.name} fill={CATEGORY_COLORS[e.name] || '#888'} />)}
+                {categoryData.map(e => <Cell key={e.name} fill={categoryColors[e.name] || '#888'} />)}
               </Pie><Tooltip formatter={(v) => `₹${v}`} contentStyle={TT} /></PieChart>
             </ResponsiveContainer>
           </div>
           <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-4">
             {categoryData.map(c => (
               <div key={c.name} className="flex items-center text-[12px] font-medium text-black/70 dark:text-white/70">
-                <span className="w-2.5 h-2.5 rounded-full mr-1.5" style={{ backgroundColor: CATEGORY_COLORS[c.name] || '#888' }} />
+                <span className="w-2.5 h-2.5 rounded-full mr-1.5" style={{ backgroundColor: categoryColors[c.name] || '#888' }} />
                 {c.name}
               </div>
             ))}
@@ -199,14 +217,14 @@ export const Dashboard = () => {
       )}
 
       {/* Bar Chart */}
-      <div className="bg-white dark:bg-neutral-900 p-5 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] shadow-sm">
+      <div className="glass-card p-5 rounded-2xl">
         <h3 className="text-[13px] font-bold tracking-tight mb-4">Last 7 Days</h3>
         <div className="h-36">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={dailyData}>
               <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#999' }} dy={8} />
               <Tooltip cursor={{ fill: '#0001' }} formatter={(v) => `₹${v}`} contentStyle={TT} />
-              <Bar dataKey="amount" fill="#4ECDC4" radius={[5, 5, 0, 0]} />
+              <Bar dataKey="amount" fill={isPositive ? '#84cc16' : '#f43f5e'} radius={[5, 5, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -235,7 +253,7 @@ export const Dashboard = () => {
         ) : (
           <div className="space-y-2">
             {paginatedTxs.map(t => (
-              <div key={t._id} className="bg-white dark:bg-neutral-900 rounded-xl border border-black/[0.06] dark:border-white/[0.08] overflow-hidden">
+              <div key={t._id} className="bg-slate-900/70 rounded-xl border border-white/10 overflow-hidden backdrop-blur-sm">
                 {editingId === t._id ? (
                   <div className="p-3.5 space-y-2.5">
                     <div className="grid grid-cols-2 gap-2">
@@ -263,7 +281,7 @@ export const Dashboard = () => {
                   </div>
                 ) : (
                   <div className="px-4 py-3 flex items-center gap-3">
-                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: CATEGORY_COLORS[t.category] || '#888' }} />
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: categoryColors[t.category] || '#888' }} />
                     <div className="flex-1 min-w-0">
                       <p className="text-[13px] font-semibold truncate">{t.description || t.category}</p>
                       <div className="flex items-center gap-1.5 mt-0.5">
@@ -297,3 +315,4 @@ export const Dashboard = () => {
     </div>
   );
 };
+

@@ -13,7 +13,7 @@ export default function PrivacyPage() {
         <section className="space-y-3">
           <h2 className="text-[15px] font-bold">What data we collect</h2>
           <p className="text-[13px] text-black/60 dark:text-white/60 leading-relaxed">
-            TalknTrack uses Google OAuth for authentication and stores your financial data in a secure MongoDB database. We collect:
+            Cashly uses Google OAuth for authentication and stores your financial data in a secure MongoDB database. We collect:
           </p>
           <ul className="text-[13px] text-black/60 dark:text-white/60 leading-relaxed space-y-2 list-disc pl-5">
             <li><span className="font-semibold text-black dark:text-white">Google profile</span> — your name, email, and profile picture for authentication purposes.</li>
@@ -42,11 +42,11 @@ export default function PrivacyPage() {
         <section className="space-y-3">
           <h2 className="text-[15px] font-bold">Open source</h2>
           <p className="text-[13px] text-black/60 dark:text-white/60 leading-relaxed">
-            TalknTrack is fully open source. You can inspect the entire codebase, verify exactly what data is collected and how it is used, and even self-host your own instance.
+            Cashly is fully open source. You can inspect the entire codebase, verify exactly what data is collected and how it is used, and even self-host your own instance.
           </p>
-          <a href="https://github.com/divyansharma001/TalknTrack" target="_blank" rel="noopener noreferrer"
+          <a href="https://github.com/AJKakarot/cashly" target="_blank" rel="noopener noreferrer"
             className="block bg-black/[0.03] dark:bg-white/[0.05] rounded-2xl p-4 text-[13px] font-semibold hover:bg-black/[0.06] dark:hover:bg-white/[0.08] transition-colors">
-            github.com/divyansharma001/TalknTrack
+            github.com/AJKakarot/cashly
           </a>
         </section>
 
@@ -56,8 +56,8 @@ export default function PrivacyPage() {
             If you have any questions about this privacy policy or how your data is handled:
           </p>
           <div className="bg-black/[0.03] dark:bg-white/[0.05] rounded-2xl p-4 space-y-1.5">
-            <a href="https://divyanshsharma.com" target="_blank" rel="noopener noreferrer" className="text-[13px] font-semibold hover:underline">Divyansh Sharma</a>
-            <p className="text-[13px] text-black/50 dark:text-white/50">connectwithdivyansharma@gmail.com</p>
+            <p className="text-[13px] font-semibold">Cashly Team</p>
+            <p className="text-[13px] text-black/50 dark:text-white/50">support@cashly.app</p>
           </div>
         </section>
       </div>

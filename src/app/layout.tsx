@@ -2,17 +2,18 @@ import type { Metadata, Viewport } from 'next';
 import { SessionProvider } from 'next-auth/react';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { ToastProvider } from '@/components/Toast';
+import { ToneProvider } from '@/components/ToneProvider';
 import Script from 'next/script';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Smart Finance Tracker',
-  description: 'AI-powered personal finance tracker',
+  title: 'Cashly',
+  description: 'Dark-first AI-powered personal finance tracker',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Finance',
+    title: 'Cashly',
   },
 };
 
@@ -33,14 +34,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <script
           dangerouslySetInnerHTML={{
-            __html: `if(localStorage.getItem('theme')!=='light')document.documentElement.classList.add('dark')`,
+            __html: `document.documentElement.classList.add('dark');localStorage.setItem('theme','dark');`,
           }}
         />
         <SessionProvider>
           <ThemeProvider>
-            <ToastProvider>
-              {children}
-            </ToastProvider>
+            <ToneProvider>
+              <ToastProvider>
+                {children}
+              </ToastProvider>
+            </ToneProvider>
           </ThemeProvider>
         </SessionProvider>
         <Script id="sw-register" strategy="lazyOnload">

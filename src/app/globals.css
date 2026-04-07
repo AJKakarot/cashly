@@ -10,13 +10,14 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #ffffff;
-  color: #000000;
+  background: #070b12;
+  color: #f5f7ff;
+  min-height: 100vh;
 }
 
 .dark body, .dark {
-  background-color: #000000;
-  color: #ffffff;
+  background: #070b12;
+  color: #f5f7ff;
 }
 
 /* Custom select chevron */
@@ -53,3 +54,10 @@ select.select-styled {
 
 /* Smooth transitions */
 * { -webkit-tap-highlight-color: transparent; }
+
+.glass-card {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 16px 40px rgba(2, 6, 23, 0.35);
+  backdrop-filter: blur(16px);
+}

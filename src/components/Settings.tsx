@@ -2,14 +2,18 @@
 
 import React, { useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
-import { Download, Moon, Sun, LogOut, User, Key, Eye, EyeOff } from 'lucide-react';
+import { Download, Moon, LogOut, User, Key, Eye, EyeOff } from 'lucide-react';
 import { useToast } from './Toast';
 import { useTheme } from './ThemeProvider';
+import { useTone } from './ToneProvider';
 
 export const Settings = () => {
   const { data: session } = useSession();
   const { toast } = useToast();
-  const { isDark, toggleTheme } = useTheme();
+  const { isDark } = useTheme();
+  const { tone } = useTone();
+  const negative = tone === 'negative';
+  const [avatarError, setAvatarError] = useState(false);
   const [groqKey, setGroqKey] = useState(() => {
     if (typeof window === 'undefined') return '';
     return localStorage.getItem('groq_api_key') || '';
@@ -40,7 +44,7 @@ export const Settings = () => {
     }
   };
 
-  const inputCls = "flex-1 bg-black/[0.04] dark:bg-white/[0.06] rounded-xl px-4 py-2.5 text-[13px] font-medium font-mono focus:outline-none focus:ring-2 focus:ring-black/15 dark:focus:ring-white/15 placeholder:text-black/25 dark:placeholder:text-white/25";
+  const inputCls = `flex-1 bg-black/[0.04] dark:bg-white/[0.06] rounded-xl px-4 py-2.5 text-[13px] font-medium font-mono focus:outline-none focus:ring-2 ${negative ? 'focus:ring-red-500/35' : 'focus:ring-lime-300/30'} placeholder:text-black/25 dark:placeholder:text-white/25`;
 
   return (
     <div className="px-5 pt-12 pb-4 space-y-5">
@@ -52,7 +56,7 @@ export const Settings = () => {
       {/* AI Provider */}
       <section>
         <h3 className="text-[10px] font-bold text-black/35 dark:text-white/35 uppercase tracking-widest mb-2.5 ml-1">AI Provider</h3>
-        <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] shadow-sm p-4 space-y-4">
+        <div className={`bg-white dark:bg-neutral-900 rounded-2xl border ${negative ? 'border-red-500/25' : 'border-lime-300/20'} shadow-sm p-4 space-y-4`}>
           <p className="text-[13px] font-semibold">Groq</p>
           <p className="text-[11px] text-black/40 dark:text-white/40">Free key: console.groq.com — Llama 3.3 + Whisper</p>
           <div className="flex items-center gap-2">
@@ -61,7 +65,7 @@ export const Settings = () => {
               placeholder="Groq API key" className={inputCls} />
             <button onClick={() => setShowKey(!showKey)} className="p-2 text-black/30 dark:text-white/30">{showKey ? <EyeOff size={15} /> : <Eye size={15} />}</button>
           </div>
-          <button onClick={handleSaveKey} className="w-full bg-black dark:bg-white text-white dark:text-black py-2.5 rounded-xl text-[13px] font-semibold">Save Key</button>
+          <button onClick={handleSaveKey} className={`w-full bg-gradient-to-r ${negative ? 'from-red-500 to-red-400' : 'from-lime-400 to-lime-300'} ${negative ? 'text-white' : 'text-black'} py-2.5 rounded-xl text-[13px] font-semibold`}>Save Key</button>
         </div>
       </section>
 
@@ -71,18 +75,24 @@ export const Settings = () => {
         <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] shadow-sm overflow-hidden">
           <div className="p-4 space-y-3">
             <div className="flex items-center gap-3">
-              {session?.user?.image ? (
-                <img src={session.user.image} alt="" className="w-10 h-10 rounded-full" />
+              {session?.user?.image && !avatarError ? (
+                <img
+                  src={session.user.image}
+                  alt={session?.user?.name || 'User avatar'}
+                  className="w-10 h-10 rounded-full object-cover border border-black/10 dark:border-white/15"
+                  referrerPolicy="no-referrer"
+                  onError={() => setAvatarError(true)}
+                />
               ) : (
                 <div className="w-10 h-10 rounded-full bg-black/[0.04] dark:bg-white/[0.06] flex items-center justify-center">
                   <User size={18} className="text-black/40 dark:text-white/40" />
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-[14px] truncate">{session?.user?.name || 'User'}</p>
-                <p className="text-[11px] text-black/40 dark:text-white/40 truncate">{session?.user?.email}</p>
+                <p className="font-bold text-[14px] truncate">Google Account</p>
+                <p className="text-[11px] text-black/40 dark:text-white/40 truncate">Signed in securely</p>
               </div>
-              <div className="w-2.5 h-2.5 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
+              <div className={`w-2.5 h-2.5 rounded-full ${negative ? 'bg-red-400 shadow-[0_0_10px_rgba(248,113,113,0.65)]' : 'bg-lime-400 shadow-[0_0_10px_rgba(163,230,53,0.65)]'}`} />
             </div>
             <button
               onClick={() => signOut({ callbackUrl: '/login' })}
@@ -98,10 +108,10 @@ export const Settings = () => {
       <section>
         <h3 className="text-[10px] font-bold text-black/35 dark:text-white/35 uppercase tracking-widest mb-2.5 ml-1">Preferences</h3>
         <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-black/[0.06] dark:border-white/[0.08] shadow-sm overflow-hidden">
-          <button onClick={toggleTheme} className="w-full px-4 py-3.5 flex items-center justify-between font-medium text-[14px]">
-            <span className="flex items-center gap-3">{isDark ? <Sun size={17} /> : <Moon size={17} />}Appearance</span>
-            <span className="text-[12px] text-black/35 dark:text-white/35">{isDark ? 'Dark' : 'Light'}</span>
-          </button>
+          <div className="w-full px-4 py-3.5 flex items-center justify-between font-medium text-[14px]">
+            <span className="flex items-center gap-3"><Moon size={17} />Appearance</span>
+            <span className="text-[12px] text-black/35 dark:text-white/35">{isDark ? 'Dark (locked)' : 'Dark (locked)'}</span>
+          </div>
         </div>
       </section>
 
